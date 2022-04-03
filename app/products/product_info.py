@@ -1,12 +1,17 @@
 from app.database import MOCK_PRODUCT_DATA
 import re
 from app.products.base_handler import BaseHandler
-
+import wikipedia
+from googletrans import Translator
 
 class ProductInfoHandler(BaseHandler):
     """
     A class used to represent a mini-bot to handle product queries.
     """
+
+    CONSTANT_NUTRITION = ["calories", "calorie", "protein", "carbs", "carbohydrates", "sugar", "fat", "nutrition"]
+    CONSTANT_LANGUAGES = ['ab','aa','af','ak','sq','am','ar','an','hy','as','av','ae','ay','az','bm','ba','eu','be','bn','bh','bi','bs','br','bg','my','ca','km','ch','ce','ny','zh','cu','cv','kw','co','cr','hr','cs','da','dv','nl','dz','en','eo','et','ee','fo','fj','fi','fr','ff','gd','gl','lg','ka','de','ki','el','kl','gn','gu','ht','ha','he','hz','hi','ho','hu','is','io','ig','id','ia','ie','iu','ik','ga','it','ja','jv','kn','kr','ks','kk','rw','kv','kg','ko','kj','ku','ky','lo','la','lv','lb','li','ln','lt','lu','mk','mg','ms','ml','mt','gv','mi','mr','mh','ro','mn','na','nv','nd','ng','ne','se','no','nb','nn','ii','oc','oj','or','om','os','pi','pa','ps','fa','pl','pt','qu','rm','rn','ru','sm','sg','sa','sc','sr','sn','sd','si','sk','sl','so','st','nr','es','su','sw','ss','sv','tl','ty','tg','ta','tt','te','th','bo','ti','to','ts','tn','tr','tk','tw','ug','uk','ur','uz','ve','vi','vo','wa','cy','fy','wo','xh','yi','yo','za','zu']
+    translator = Translator()
 
     def __init__(self) -> None:
         super().__init__()
@@ -18,6 +23,8 @@ class ProductInfoHandler(BaseHandler):
         self.stock_pattern = re.compile(r"(stock|how many|amount)", re.IGNORECASE)
         self.nutrition_pattern = re.compile(
             r"(calories|protein|carbs|carbohydrates|sugar|fat|nutrition|nutritional|weight|health|healthy)", re.IGNORECASE)
+        self.definition_pattern = re.compile(
+            r"(definition|exactly)", re.IGNORECASE)
 
     def dispose(self):
         super().dispose()
@@ -58,7 +65,9 @@ class ProductInfoHandler(BaseHandler):
         request = None
 
         # Check for keywords for prices
-        if self.nutrition_pattern.search(message):
+        if self.definition_pattern.search(message):
+            request = "definition"
+        elif self.nutrition_pattern.search(message):
             request = "nutrition"
         elif self.price_pattern.search(message):
             request = "price"
@@ -85,9 +94,9 @@ class ProductInfoHandler(BaseHandler):
 
         # Get the product information
         products = self.db.get_product("id", prod_id)
-
         # Since id is unique, we can assume there is only one product
-        product = products[0]
+        if products:
+            product = products[0]
 
         reply = None
 
@@ -101,8 +110,18 @@ class ProductInfoHandler(BaseHandler):
             else:
                 reply = "%s are out of stock." % (
                     product['names'].capitalize())
+        elif prod_msg_type == "definition":
+            for word in message.replace("?", " ").split(" "):
+                if word.lower() in self.CONSTANT_NUTRITION:
+                    reply = wikipedia.summary(word.lower(), sentences=1)
         elif prod_msg_type == "nutrition":
             reply = "%s Nutrition Facts: Calories = %s, Protein = %s, Carbs = %s, Sugar = %s, Fat = %s." % (
                 product['name'].capitalize(), product['calories'], product['protein'], product['carbs'], product['sugar'], product['fat'])
+        
+        if message.split(" ")[0].lower() in self.CONSTANT_LANGUAGES:
+            try:
+                reply = self.translator.translate(reply, src="en", dest=message.split(" ")[0]).text
+            except:
+                pass
 
         return reply

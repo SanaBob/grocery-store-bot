@@ -21,10 +21,13 @@ The chatbot will do so by doing a basic check of the user input, and redirecting
   * [Store Info API](#store-info-api)
   * [Product Info API](#product-info-api)
   * [Database API](#database-api)
-* [New Features](#new-features)
+* [A3 Features](#a3-features)
   * [Nutrition Sub-Topic](#nutrition-sub-topic)
   * [5 Reasonable Responses](#5-reasonable-responses-outside-of-the-topic)
   * [Spelling Mistakes](#spelling-mistakes)
+* [Individual Features](#individual-features)
+  * [Wikipedia API](#wikipedia-api)
+  * [Google Translate API](#google-translate-api)
 
 ## Setup
 
@@ -177,7 +180,7 @@ output = db.get_product("id", "4011")
 # returns list: [OrderedDict([('id', '4011'), ('name', 'banana'), ('names', 'bananas'), ('price', 0.67), ('price_scale', 'per kg'), ('in_stock', True), ('calories', 89), ('protein', '1.1 g'), ('carbs', '22.8 g'), ('sugar', '12.2 g'), ('fat', '0.3 g')])]
 ```
 
-## New Features
+## A3 Features
 
 ### Nutrition Sub-Topic
 
@@ -214,3 +217,38 @@ With Named Entity Recognition handled by Google's Diagflow API, the bot will pro
 With Sentiment Analysis handled by Google's Diagflow API, the bot will provide a more accurate response to the user.
 
 ![correcttion-snippet](snippets/sentiment.PNG)
+
+## Individual Features
+
+### Wikipedia API
+
+The bot searches wikipedia for nutritional definitions, such as calories, protein, carbs, sugar, fat, etc. This gives the user a better understanding about nutrition.
+
+Example:
+The bot searches for "calorie" in wikipedia and returns the following:
+```
+from app.products.product_info import ProductInfoHandler
+
+StoreHandler = ProductInfoHandler()
+message = "What is the definition of calorie?"
+output = StoreHandler.handle(message)
+# returns string: "The calorie is a unit of energy."
+```
+
+### Google Translate API
+
+The bot translates the user's message into specified languege (French in this case).
+
+Example:
+```
+from app.products.product_info import ProductInfoHandler
+
+StoreHandler = ProductInfoHandler()
+message = "fr What is the definition of calorie?"
+output = StoreHandler.handle(message)
+# returns string: "La calorie est une unité d'énergie." (French)
+```
+
+List of all languages and their short form can be found here:
+
+https://cloud.google.com/translate/docs/languages
